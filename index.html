@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>"hacked lmao" poster</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/marx-css@4.0.1/css/marx.min.css"
+      integrity="sha256-gE5VJfX+re1WNfYaHbmv94efAxhEwuUfDuviH7rIf4E="
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <main>
+      <h1>"hacked lmao" poster</h1>
+      <p>
+        did someone leave their computer unlocked with mastodon signed in? did
+        they do
+        <a href="https://eldritch.cafe/@AgathaSorceress/109671195664488246"
+          >shenanigans</a
+        >
+        so you can't post "hacked lmao" normally?
+      </p>
+      <form id="form">
+        <input type="text" placeholder="instance domain" id="instance" />
+        <input placeholder="token" type="password" id="token" />
+        <button>"hacked lmao"</button>
+      </form>
+    </main>
+    <script>
+      document.querySelector("#form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (
+          (
+            await fetch(
+              "https://" +
+                document
+                  .querySelector("#instance")
+                  .value.replace(/^.*:\/?\/?|\/.*$/g, "") +
+                "/api/v1/statuses",
+              {
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "application/json",
+                  Authorization:
+                    "Bearer " +
+                    document
+                      .querySelector("#token")
+                      .value.replace(/^\s*Bearer\s*/i, ""),
+                },
+                body: '{"status":"hacked lmao","visibility":"public"}',
+                method: "POST",
+              }
+            )
+          ).ok
+        ) {
+          document.querySelector("#form").textContent = "posted";
+        } else {
+          document.querySelector("#form").textContent = "failed to post";
+        }
+      });
+    </script>
+  </body>
+</html>
