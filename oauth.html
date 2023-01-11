@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>"hacked lmao" poster: oauth edition</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/marx-css@4.0.1/css/marx.min.css"
+      integrity="sha256-gE5VJfX+re1WNfYaHbmv94efAxhEwuUfDuviH7rIf4E="
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <main>
+      <h1>"hacked lmao" poster</h1>
+      <p>
+        <a href=".">Use a token</a>
+      </p>
+      <form id="form">
+        <input type="text" placeholder="instance domain" id="instance" required />
+        <button>"hacked lmao"</button>
+      </form>
+    </main>
+    <script>
+      const usp = new URLSearchParams(location.search);
+      async function load() {
+        const instance = (document.querySelector("#instance").value =
+          usp.get("instance"));
+        const redir =
+          location.origin +
+          location.pathname +
+          `?instance=${encodeURIComponent(instance)}`;
+        let app;
+        const code = usp.get("code");
+        history.replaceState(
+          null,
+          "",
+          instance ? "?instance=" + encodeURIComponent(instance) : ""
+        );
+        if (!code) return;
+        document.querySelector("#form").textContent = "loading...";
+        try {
+          const config = JSON.parse(localStorage.getItem("login_config"));
+          if (config.instance !== instance) throw null;
+          ({ app } = config);
+          localStorage.removeItem("login_config");
+        } catch (e) {
+          alert(
+            "It looks like you cleared your storage or switched devices mid-flow. Please try again."
+          );
+          return location.reload();
+        }
+        try {
+          const token = await (
+            await fetch(
+              `https://${instance}/oauth/token?grant_type=authorization_code&client_id=${encodeURIComponent(
+                app.client_id
+              )}&client_secret=${encodeURIComponent(
+                app.client_secret
+              )}&redirect_uri=${encodeURIComponent(
+                redir
+              )}&scope=write:statuses&code=${encodeURIComponent(code)}`,
+              {
+                headers: {
+                  Accept: "application/json",
+                },
+                method: "POST",
+              }
+            )
+          ).json();
+          if (!token.access_token) throw null;
+          console.log(token, app);
+          if (
+            (
+              await fetch(
+                "https://" + instance + "/api/v1/statuses",
+                {
+                  headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token.access_token,
+                  },
+                  body: '{"status":"hacked lmao","visibility":"public"}',
+                  method: "POST",
+                }
+              )
+            ).ok
+          ) {
+            document.querySelector("#form").textContent = "posted";
+          } else {
+            document.querySelector("#form").textContent = "failed to post";
+          }
+          await fetch(
+            `https://${instance}/oauth/revoke?client_id=${encodeURIComponent(
+              app.client_id
+            )}&client_secret=${encodeURIComponent(
+              app.client_secret
+            )}&token=${encodeURIComponent(token.access_token)}`,
+            {
+              headers: {
+                Accept: "application/json",
+              },
+              method: "POST",
+              mode: "no-cors",
+            }
+          );
+        } catch (e) {
+          console.error(e);
+          document.querySelector("#form").textContent = "error logging in.";
+        }
+      }
+      load();
+
+      document.querySelector("#form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try {
+          const instance = document
+            .querySelector("#instance")
+            .value.replace(/^.*:\/?\/?|\/.*$/g, "");
+          const redir =
+            location.origin +
+            location.pathname +
+            `?instance=${encodeURIComponent(instance)}`;
+
+          const app = await (
+            await fetch("https://" + instance + "/api/v1/apps", {
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                client_name: '"hacked lmao" poster',
+                redirect_uris: redir,
+                scopes: "write:statuses",
+                website: location.origin + location.pathname,
+              }),
+              method: "POST",
+              mode: "cors",
+            })
+          ).json();
+          console.log(app);
+          try {
+            localStorage.setItem(
+              "login_config",
+              JSON.stringify({ instance, app })
+            );
+          } catch (e) {
+            alert("It looks like you have storage disabled.");
+            throw e;
+          }
+          location.href = `https://${instance}/oauth/authorize?response_type=code&client_id=${encodeURIComponent(
+            app.client_id
+          )}&redirect_uri=${encodeURIComponent(redir)}&scope=write:statuses`;
+        } catch (e) {
+          console.error(e);
+          form.textContent = "Error.";
+        }
+      });
+    </script>
+  </body>
+</html>
